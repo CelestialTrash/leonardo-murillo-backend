@@ -3,7 +3,7 @@ console.log("Server is starting...");
 
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config(); // Load environment variables
+require('dotenv').config(); // Load environment variables
 const stripeRoutes = require("./routes/stripeRoutes"); // Import routes
 
 const app = express();
