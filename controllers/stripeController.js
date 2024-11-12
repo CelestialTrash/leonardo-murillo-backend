@@ -1,48 +1,55 @@
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_TEST, {
-  apiVersion: "2022-11-15", // Asegúrate de tener la versión correcta de la API
-});
 
-// Base URL según entorno
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://tu-dominio.com' 
-  : 'http://localhost:5173';
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY_TEST, // Cambiar manualmente entre TEST y LIVE
+  { apiVersion: "2022-11-15" }
+);
 
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { cartItems, formData } = req.body;
 
-    const lineItems = cartItems.map(item => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.name,
-          description: `Material: ${item.material}, Color: ${item.color}, Switch: ${item.switchType}`,
-        },
-        unit_amount: item.price, // Precio en centavos
-      },
-      quantity: item.quantity,
-    }));
+    if (!cartItems || cartItems.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
 
-    const metadata = cartItems.reduce((acc, item, index) => {
-      acc[`product_${index + 1}`] = `Name: ${item.name}, Material: ${item.material}, Color: ${item.color}, Switch: ${item.switchType}`;
-      return acc;
-    }, {});
+    const lineItems = cartItems.map((item) => {
+      const unitAmount = Math.round(parseFloat(item.price) * 100); // Convertir a centavos
+
+      if (isNaN(unitAmount) || unitAmount <= 0) {
+        throw new Error(`Invalid price for item: ${item.name}`);
+      }
+
+      console.log("Preparing line item:", {
+        name: item.name,
+        material: item.material,
+        color: item.color,
+        switchType: item.switchType,
+        unitAmount,
+      });
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${item.name} - ${item.material || 'N/A'}`, // Material en el nombre
+            description: `Color: ${item.color || 'N/A'}, Switch: ${item.switchType || 'N/A'}`, // Descripción visible
+          },
+          unit_amount: unitAmount,
+        },
+        quantity: item.quantity,
+      };
+    });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      metadata: {
-        customerName: formData.name,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        ...metadata,
-      },
-      success_url: `${BASE_URL}/success`,
-      cancel_url: `${BASE_URL}/cancel`,
+      success_url: `http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5173/cancel`,
     });
+
+    console.log("Stripe session created:", session.id);
 
     res.json({ id: session.id });
   } catch (error) {
