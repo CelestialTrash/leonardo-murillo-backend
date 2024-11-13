@@ -1,7 +1,7 @@
 const Stripe = require("stripe");
 
 const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY_TEST, // Cambiar manualmente entre TEST y LIVE
+  process.env.STRIPE_SECRET_KEY, // Cambiar manualmente entre TEST y LIVE
   { apiVersion: "2022-11-15" }
 );
 
@@ -45,8 +45,8 @@ exports.createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url: `http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5173/cancel`,
+      success_url: `http://localhost:5173/success`, // Cambia localhost según el dominio en producción
+      cancel_url: `http://localhost:5173/cancel`,  // Página integrada de cancelación de Stripe
     });
 
     console.log("Stripe session created:", session.id);
