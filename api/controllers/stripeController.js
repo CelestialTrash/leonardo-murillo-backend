@@ -1,7 +1,7 @@
 const Stripe = require("stripe");
 
 const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY, // Cambiar manualmente entre TEST y LIVE
+  process.env.STRIPE_SECRET_KEY, // Clave de Stripe segura
   { apiVersion: "2022-11-15" }
 );
 
@@ -14,30 +14,22 @@ exports.createCheckoutSession = async (req, res) => {
     }
 
     const lineItems = cartItems.map((item) => {
-      const unitAmount = Math.round(parseFloat(item.price) * 100); // Convertir a centavos
+      const unitAmount = Math.round(parseFloat(item.price) * 100); // Convierte a centavos
 
       if (isNaN(unitAmount) || unitAmount <= 0) {
         throw new Error(`Invalid price for item: ${item.name}`);
       }
-
-      console.log("Preparing line item:", {
-        name: item.name,
-        material: item.material,
-        color: item.color,
-        switchType: item.switchType,
-        unitAmount,
-      });
 
       return {
         price_data: {
           currency: "usd",
           product_data: {
             name: `${item.name} - ${item.material || 'N/A'}`, // Material en el nombre
-            description: `Color: ${item.color || 'N/A'}, Switch: ${item.switchType || 'N/A'}`, // Descripción visible
+            description: `Color: ${item.color || 'N/A'}, Switch: ${item.switchType || 'N/A'}` // Descripción detallada
           },
-          unit_amount: unitAmount,
+          unit_amount: unitAmount
         },
-        quantity: item.quantity,
+        quantity: item.quantity
       };
     });
 
@@ -45,12 +37,11 @@ exports.createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url: `http://localhost:5173/success`, // Cambia localhost según el dominio en producción
-      cancel_url: `http://localhost:5173/cancel`,  // Página integrada de cancelación de Stripe
+      success_url: `https://murirami.netlify.app/success`, // URL de éxito
+      cancel_url: `https://murirami.netlify.app/cancel` // URL de cancelación
     });
 
     console.log("Stripe session created:", session.id);
-
     res.json({ id: session.id });
   } catch (error) {
     console.error("Error creating Stripe session:", error);

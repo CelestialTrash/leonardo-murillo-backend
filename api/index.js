@@ -5,18 +5,15 @@ const stripeRoutes = require("./routes/stripeRoutes");
 
 const app = express();
 
-// Middleware CORS configurado correctamente
+// Configuración de CORS para permitir el frontend de Netlify
 app.use(cors({
-  origin: "https://murirami.netlify.app", // Permite el frontend de Netlify
-  methods: ["GET", "POST"], // Métodos permitidos
-  allowedHeaders: ["Content-Type"] // Cabeceras permitidas
+  origin: "https://murirami.netlify.app", // Asegúrate de reemplazar con tu dominio real si cambia
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
 }));
 
 app.use(express.json());
 app.use("/api/stripe", stripeRoutes);
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 module.exports = app;
 
