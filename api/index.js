@@ -8,7 +8,8 @@ const stripeRoutes = require("./routes/stripeRoutes"); // Import routes
 
 const app = express();
 
-app.use(cors());
+
+app.use(cors({ origin: "https://murirami.netlify.app" }));;
 app.use(express.json()); // Middleware to parse JSON bodies
 
 // Set up Stripe payment routes
