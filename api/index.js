@@ -14,8 +14,4 @@ app.use(express.json()); // Middleware to parse JSON bodies
 // Set up Stripe payment routes
 app.use("/api/stripe", stripeRoutes);
 
-module.exports = app;
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+module.exports = app; // Export the app for Vercel
