@@ -1,21 +1,22 @@
-// index.js
-console.log("Server is starting...");
-
 const express = require("express");
 const cors = require("cors");
-require('dotenv').config(); // Load environment variables
-const stripeRoutes = require("./routes/stripeRoutes"); // Import routes
+require('dotenv').config();
+const stripeRoutes = require("./routes/stripeRoutes");
 
 const app = express();
 
+// Middleware CORS configurado correctamente
+app.use(cors({
+  origin: "https://murirami.netlify.app", // Permite el frontend de Netlify
+  methods: ["GET", "POST"], // Métodos permitidos
+  allowedHeaders: ["Content-Type"] // Cabeceras permitidas
+}));
 
-app.use(cors({ origin: "https://murirami.netlify.app" }));;
-app.use(express.json()); // Middleware to parse JSON bodies
-
-// Set up Stripe payment routes
+app.use(express.json());
 app.use("/api/stripe", stripeRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-module.exports = app; // Export the app for Vercel
+module.exports = app;
+
