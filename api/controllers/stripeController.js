@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
-async function sendEmail(customerEmail, paymentId) {
+async function sendEmail(customerEmail, sessionId) {
   const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
@@ -15,9 +15,9 @@ async function sendEmail(customerEmail, paymentId) {
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: customerEmail,
+    to: customerEmail, // Asegúrate de que 'customerEmail' es correcto
     subject: 'Order Confirmation',
-    text: `Thank you for your order! Your payment ID is: ${paymentId}. You can use this ID to track your order.`,
+    text: `Thank you for your order! Your session ID is: ${sessionId}.`,
   };
 
   try {
@@ -60,11 +60,8 @@ exports.createCheckoutSession = async (req, res) => {
       cancel_url: `https://murirami.netlify.app/cancel`,
     });
 
-    // Retrieve Payment Intent to get the Payment ID
-    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
-
-    // Send the Payment ID via email
-    await sendEmail(formData.email, paymentIntent.id);
+    // Enviar correo al usuario con el email del formData
+    await sendEmail(formData.email, session.id);
 
     res.json({ id: session.id });
   } catch (error) {
@@ -72,4 +69,3 @@ exports.createCheckoutSession = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
