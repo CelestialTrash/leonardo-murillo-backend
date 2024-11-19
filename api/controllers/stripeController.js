@@ -1,9 +1,32 @@
+// controllers/stripeController.js
 const Stripe = require("stripe");
+const nodemailer = require("nodemailer");
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY, // Clave de Stripe segura
-  { apiVersion: "2022-11-15" }
-);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
+
+async function sendEmail(customerEmail, sessionId) {
+  const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: customerEmail,
+    subject: 'Order Confirmation',
+    text: `Thank you for your order! Your session ID is: ${sessionId}.`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
 
 exports.createCheckoutSession = async (req, res) => {
   try {
@@ -13,35 +36,29 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    const lineItems = cartItems.map((item) => {
-      const unitAmount = Math.round(parseFloat(item.price) * 100); // Convierte a centavos
-
-      if (isNaN(unitAmount) || unitAmount <= 0) {
-        throw new Error(`Invalid price for item: ${item.name}`);
-      }
-
-      return {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `${item.name} - ${item.material || 'N/A'}`, // Material en el nombre
-            description: `Color: ${item.color || 'N/A'}, Switch: ${item.switchType || 'N/A'}` // Descripción detallada
-          },
-          unit_amount: unitAmount
+    const lineItems = cartItems.map((item) => ({
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: `${item.name} - ${item.material || 'N/A'}`,
+          description: `Color: ${item.color || 'N/A'}, Switch: ${item.switchType || 'N/A'}`,
         },
-        quantity: item.quantity
-      };
-    });
+        unit_amount: Math.round(parseFloat(item.price) * 100),
+      },
+      quantity: item.quantity,
+    }));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url: `https://murirami.netlify.app/success`, // URL de éxito
-      cancel_url: `https://murirami.netlify.app/cancel` // URL de cancelación
+      success_url: `https://murirami.netlify.app/success`,
+      cancel_url: `https://murirami.netlify.app/cancel`,
     });
 
-    console.log("Stripe session created:", session.id);
+    // Enviar correo al usuario con el email del formData
+    await sendEmail(formData.email, session.id);
+
     res.json({ id: session.id });
   } catch (error) {
     console.error("Error creating Stripe session:", error);
