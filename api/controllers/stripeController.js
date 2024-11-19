@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
-async function sendEmail(customerEmail, sessionId) {
+async function sendEmail(customerEmail, paymentId) {
   const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
@@ -17,7 +17,7 @@ async function sendEmail(customerEmail, sessionId) {
     from: process.env.EMAIL_USER,
     to: customerEmail,
     subject: 'Order Confirmation',
-    text: `Thank you for your order! Your session ID is: ${sessionId}.`,
+    text: `Thank you for your order! Your payment ID is: ${paymentId}. You can use this ID to track your order.`,
   };
 
   try {
@@ -34,6 +34,10 @@ exports.createCheckoutSession = async (req, res) => {
 
     if (!cartItems || cartItems.length === 0) {
       return res.status(400).json({ error: "Cart is empty" });
+    }
+
+    if (!formData.email) {
+      return res.status(400).json({ error: "Email is required" });
     }
 
     const lineItems = cartItems.map((item) => ({
@@ -56,8 +60,11 @@ exports.createCheckoutSession = async (req, res) => {
       cancel_url: `https://murirami.netlify.app/cancel`,
     });
 
-    // Enviar correo al usuario con el email del formData
-    await sendEmail(formData.email, session.id);
+    // Retrieve Payment Intent to get the Payment ID
+    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+
+    // Send the Payment ID via email
+    await sendEmail(formData.email, paymentIntent.id);
 
     res.json({ id: session.id });
   } catch (error) {
@@ -65,3 +72,4 @@ exports.createCheckoutSession = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
