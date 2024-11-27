@@ -1,9 +1,10 @@
+// controllers/stripeController.js
 const Stripe = require("stripe");
 const nodemailer = require("nodemailer");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
-async function sendEmail(customerEmail, sessionId, formData) {
+async function sendEmail(customerEmail, sessionId) {
   const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
@@ -14,18 +15,9 @@ async function sendEmail(customerEmail, sessionId, formData) {
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: "leonardo@example.com", // Cambiar a correo de Leonardo
+    to: customerEmail, // Asegúrate de que 'customerEmail' es correcto
     subject: 'Order Confirmation',
-    text: `
-      New Order Details:
-      - Session ID: ${sessionId}
-      - Customer Email: ${customerEmail}
-      - Shipping Address:
-        Name: ${formData.name}
-        Address: ${formData.address}
-        City: ${formData.city}
-        State: ${formData.state}
-    `,
+    text: `Thank you for your order! Your session ID is: ${sessionId}.`,
   };
 
   try {
@@ -60,24 +52,16 @@ exports.createCheckoutSession = async (req, res) => {
       quantity: item.quantity,
     }));
 
-    // Crear la sesión de Stripe con metadata personalizada
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       success_url: `https://murirami.netlify.app/success`,
       cancel_url: `https://murirami.netlify.app/cancel`,
-      metadata: {
-        name: formData.name,
-        email: formData.email,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-      },
     });
 
-    // Enviar correo con detalles del pedido
-    await sendEmail(formData.email, session.id, formData);
+    // Enviar correo al usuario con el email del formData
+    await sendEmail(formData.email, session.id);
 
     res.json({ id: session.id });
   } catch (error) {
