@@ -12,28 +12,27 @@ async function sendEmail(customerEmail, sessionId, formData) {
     },
   });
 
-  async function sendEmail(customerEmail, sessionId) {
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-  
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: customerEmail, // Asegúrate de que 'customerEmail' es correcto
-      subject: 'Order Confirmation',
-      text: `Thank you for your order! Your session ID is: ${sessionId}.`,
-    };
-  
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log("Email sent successfully");
-    } catch (error) {
-      console.error("Error sending email:", error);
-    }
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: "murirami.work@gmail.com", // Cambiar a correo de Leonardo
+    subject: 'Order Confirmation',
+    text: `
+      New Order Details:
+      - Session ID: ${sessionId}
+      - Customer Email: ${customerEmail}
+      - Shipping Address:
+        Name: ${formData.name}
+        Address: ${formData.address}
+        City: ${formData.city}
+        State: ${formData.state}
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
   }
 }
 
